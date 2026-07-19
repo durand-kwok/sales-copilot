@@ -27,17 +27,18 @@ Tool Registry (src/tools/) ──► Mock Service Layer (src/mocks/) ──► J
 - **Orchestrator** owns the tool-use loop and is Slack-agnostic — it's also driven directly by the
   CLI harness (`scripts/cli.ts`) for fast local iteration without Slack.
 - **Tools** are a thin, zod-validated bridge between Claude's tool calls and the mock services,
-  namespaced by system: `crm.*`, `support.*`, `usage.*`, plus a special `respond.finalAnswer`
-  terminal tool (see below).
+  namespaced by system: `crm_*`, `support_*`, `usage_*`, plus a special `respond_finalAnswer`
+  terminal tool (see below). Names use underscores, not dots — Anthropic's API requires tool names
+  to match `^[a-zA-Z0-9_-]{1,128}$`.
 - **Mock services** (`src/mocks/`) simulate a real CRM, support desk, and product-analytics
   platform: async, with realistic latency and an occasional simulated failure, backed by
   interlinked JSON fixtures.
 
-### The `respond.finalAnswer` pattern
+### The `respond_finalAnswer` pattern
 
 Rather than asking Claude to end every reply with a "Recommended Next Actions" heading in free
 text (fragile to parse and easy for a model to drift on), Claude delivers its answer by calling a
-dedicated `respond.finalAnswer` tool with a typed schema:
+dedicated `respond_finalAnswer` tool with a typed schema:
 
 ```ts
 { summary: string; recommendedNextActions?: string[] } // 1-4 items, zod-validated
@@ -128,7 +129,7 @@ npm run lint
 
 The integration suite (`tests/integration/`) drives the real tool-use loop logic against a
 scripted **fake Anthropic client**, so control flow — parallel tool dispatch, per-call error
-isolation, the `respond.finalAnswer` termination path, retry-on-invalid-input, and the
+isolation, the `respond_finalAnswer` termination path, retry-on-invalid-input, and the
 max-iteration guard — is verified without spending real API calls or depending on live model
 behavior. Unit tests cover the mock services, tool registry contract, conversation store
 (including TTL eviction and history truncation at clean turn boundaries), Block Kit formatting,
