@@ -1,0 +1,8 @@
+[
+  { "id": "con_acme_1", "accountId": "acc_acme", "name": "Dana Whitfield", "title": "VP of Operations", "email": "dana.whitfield@acme.example", "isChampion": true },
+  { "id": "con_acme_2", "accountId": "acc_acme", "name": "Marcus Webb", "title": "IT Director", "email": "marcus.webb@acme.example", "isChampion": false },
+  { "id": "con_globex_1", "accountId": "acc_globex", "name": "Elena Torres", "title": "Head of Sales Ops", "email": "elena.torres@globex.example", "isChampion": true },
+  { "id": "con_initech_1", "accountId": "acc_initech", "name": "Sam Okafor", "title": "Director of Revenue", "email": "sam.okafor@initech.example", "isChampion": false },
+  { "id": "con_umbrella_1", "accountId": "acc_umbrella", "name": "Grace Kim", "title": "COO", "email": "grace.kim@umbrella.example", "isChampion": true },
+  { "id": "con_stark_1", "accountId": "acc_stark", "name": "Tony Reyes", "title": "VP Engineering", "email": "tony.reyes@stark.example", "isChampion": false }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "acc_acme",
+    "name": "Acme Corp",
+    "industry": "Manufacturing",
+    "tier": "Enterprise",
+    "arr": 480000,
+    "renewalDate": "2026-09-01",
+    "owner": "Jordan Lee"
+  },
+  {
+    "id": "acc_globex",
+    "name": "Globex Industries",
+    "industry": "Logistics",
+    "tier": "Growth",
+    "arr": 96000,
+    "renewalDate": "2027-02-15",
+    "owner": "Priya Patel"
+  },
+  {
+    "id": "acc_initech",
+    "name": "Initech",
+    "industry": "Financial Services",
+    "tier": "Growth",
+    "arr": 72000,
+    "renewalDate": "2026-11-30",
+    "owner": "Jordan Lee"
+  },
+  {
+    "id": "acc_umbrella",
+    "name": "Umbrella Health",
+    "industry": "Healthcare",
+    "tier": "Starter",
+    "arr": 24000,
+    "renewalDate": "2027-04-10",
+    "owner": "Priya Patel"
+  },
+  {
+    "id": "acc_stark",
+    "name": "Stark Dynamics",
+    "industry": "Aerospace",
+    "tier": "Enterprise",
+    "arr": 610000,
+    "renewalDate": "2026-08-20",
+    "owner": "Morgan Reyes"
+  }
+]

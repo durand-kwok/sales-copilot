@@ -1,0 +1,6 @@
+[
+  { "id": "tic_acme_1", "accountId": "acc_acme", "subject": "SSO outage — users intermittently unable to log in via Okta", "status": "open", "priority": "urgent", "createdDate": "2026-07-09", "updatedDate": "2026-07-17" },
+  { "id": "tic_acme_2", "accountId": "acc_acme", "subject": "Request for additional admin seats", "status": "resolved", "priority": "low", "createdDate": "2026-06-20", "updatedDate": "2026-06-22" },
+  { "id": "tic_globex_1", "accountId": "acc_globex", "subject": "Export to CSV occasionally times out on large reports", "status": "pending", "priority": "medium", "createdDate": "2026-07-12", "updatedDate": "2026-07-15" },
+  { "id": "tic_stark_1", "accountId": "acc_stark", "subject": "API rate limit too low for integration use case", "status": "open", "priority": "high", "createdDate": "2026-07-11", "updatedDate": "2026-07-16" }
+]
