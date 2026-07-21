@@ -30,8 +30,9 @@ Tool Registry (src/tools/) ──► Service Layer (src/data/) ──► Snowfla
 - **Tools** are a thin, zod-validated bridge between Claude's tool calls and the service layer,
   namespaced by system: `crm_*` and `usage_*` (customer-level, keyed by numeric `customerId`);
   `location_*`, `finance_*`, `workforce_*`, and `marketing_*` (all aggregate/city-level — no
-  `customerId`); plus a special `respond_finalAnswer` terminal tool (see below). Names use
-  underscores, not dots — Anthropic's API requires tool names to match `^[a-zA-Z0-9_-]{1,128}$`.
+  `customerId`); an optional `analyst_*` tool (see below); plus a special `respond_finalAnswer`
+  terminal tool. Names use underscores, not dots — Anthropic's API requires tool names to match
+  `^[a-zA-Z0-9_-]{1,128}$`.
 - **Service layer** (`src/data/`) runs parameterized SQL against a real Snowflake database
   (`AIRE_DATA.WORKFORCE_ANALYTICS`) via `src/snowflake/client.ts`, which lazily pools connections
   (`snowflake-sdk` + `generic-pool`) and wraps every driver failure as a safe, generic
@@ -52,6 +53,31 @@ contract structurally enforced (validated by zod, not guessed from text), and le
 `src/slack/formatting.ts` render it as its own distinct Block Kit section instead of inline prose.
 If Claude ever answers in plain text instead (stop_reason `end_turn`), the orchestrator falls back
 to using that text as the summary with no next actions — a graceful degrade, not a crash.
+
+### The optional `analyst_askWorkforceQuestion` tool (Cortex Analyst via MCP)
+
+Snowflake exposes a native, Snowflake-hosted **MCP server** (`CREATE MCP SERVER`) with two tools:
+`query_data` (raw SQL execution — self-flagged by Snowflake as `destructiveHint: true`, since it's
+not read-only) and `aire_analyst` (Cortex Analyst, self-flagged `readOnlyHint: true`). This project
+deliberately exposes **only** the safe one to Claude.
+
+Cortex Analyst doesn't execute queries itself — it returns an interpretation of the question plus a
+*proposed* SQL statement. `src/snowflake/mcpAnalystClient.ts` implements the missing half: it calls
+`aire_analyst` over the MCP protocol (a plain authenticated HTTP `tools/call` JSON-RPC request, no
+MCP SDK dependency needed for this single stateless call), verifies the returned statement is
+`SELECT`/`WITH`-shaped (rejecting anything else as a safety check, even though Cortex Analyst is
+supposed to only ever propose reads), and then executes it via the **same** `querySnowflake()`
+connection already powering every other tool — so the destructive `query_data` tool is never
+touched anywhere in this codebase.
+
+This tool is **optional and additive** — it only registers when `SNOWFLAKE_MCP_ENDPOINT` is set,
+and the system prompt instructs Claude to try the six fixed tool systems first, falling back to
+this one only when a question genuinely falls outside their coverage.
+
+Authentication reuses the exact same key-pair already configured for the primary Snowflake
+connection (`SNOWFLAKE_PRIVATE_KEY_PATH`) — `src/snowflake/keyPairJwt.ts` builds a Snowflake
+key-pair JWT from it for the MCP server's REST API, a different auth mechanism than
+`snowflake-sdk`'s own internal handling, but the same underlying credential.
 
 ## Project layout
 

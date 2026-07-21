@@ -228,3 +228,12 @@ export interface BookingForecastPoint {
   upperBound: number;
   monthlyCapacity: number;
 }
+
+export interface WorkforceAnalystAnswer {
+  /** Cortex Analyst's restatement of the question it answered. */
+  interpretation: string;
+  /** The SQL Cortex Analyst generated, or null if it didn't produce one (e.g. needs clarification). */
+  generatedSql: string | null;
+  /** Real result rows from executing generatedSql, or null if there was no query to run. */
+  rows: Record<string, unknown>[] | null;
+}

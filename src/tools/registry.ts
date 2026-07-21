@@ -1,6 +1,8 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import type { z } from 'zod';
+import { env } from '../config/env.js';
 import { logger } from '../logging/logger.js';
+import { analystTools } from './analystTools.js';
 import { crmTools } from './crmTools.js';
 import { financeTools } from './financeTools.js';
 import { locationTools } from './locationTools.js';
@@ -25,6 +27,9 @@ export const toolRegistry: ToolDefinition[] = [
   ...financeTools,
   ...workforceTools,
   ...marketingTools,
+  // Only registered when SNOWFLAKE_MCP_ENDPOINT is configured — an optional, experimental
+  // capability layered on top of the fixed tools above, not a replacement for them.
+  ...(env.SNOWFLAKE_MCP_ENDPOINT ? analystTools : []),
   ...respondTools,
 ];
 

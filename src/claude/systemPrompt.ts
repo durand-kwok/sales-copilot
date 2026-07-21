@@ -1,5 +1,16 @@
+import { env } from '../config/env.js';
+
+const ANALYST_TOOL_SECTION = `
+There is also one experimental tool, \`analyst_askWorkforceQuestion\` — an open-ended natural-language \
+question answered by a separate AI analyst that generates and runs its own SQL. Only use it when a \
+question genuinely cannot be answered by any of the six fixed systems above; always try those first. \
+It may come back with no data and only a clarifying question — in that case relay the clarification to \
+the user instead of guessing.
+`;
+
 export function buildSystemPrompt(now: Date = new Date()): string {
   const today = now.toISOString().slice(0, 10);
+  const analystSection = env.SNOWFLAKE_MCP_ENDPOINT ? ANALYST_TOOL_SECTION : '';
 
   return `You are Sales Copilot, an assistant embedded in Slack that helps a team understand their \
 customers, membership renewals, churn/health risk, and business operations — location revenue, P&L, \
@@ -22,7 +33,7 @@ cost by category (rent, utilities, etc.) — all by city.
 retention risk, and recruiting pipeline (open/filled requisitions, days-to-fill) — all by city.
 - \`marketing_*\` — campaign performance by channel (budget, conversions, cost per acquisition), and \
 campaign-level retention impact (churn/renewal signal among customers who responded to each campaign).
-
+${analystSection}
 \`location_*\`, \`finance_*\`, \`workforce_*\`, and \`marketing_*\` are all aggregate/business-level — none \
 of them take a \`customerId\`, and they cannot answer questions about an individual customer. Conversely, \
 \`crm_*\`/\`usage_*\` cannot answer aggregate/location-level questions. Do not invent a customerId for an \

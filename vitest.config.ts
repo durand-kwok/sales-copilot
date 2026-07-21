@@ -15,6 +15,8 @@ export default defineConfig({
       SNOWFLAKE_AUTHENTICATOR: 'SNOWFLAKE_JWT',
       SNOWFLAKE_PRIVATE_KEY_PATH: '/dev/null',
       SNOWFLAKE_WAREHOUSE: 'TEST_WH',
+      SNOWFLAKE_MCP_ENDPOINT:
+        'https://test-account.snowflakecomputing.com/api/v2/databases/TEST_DB/schemas/TEST_SCHEMA/mcp-servers/TEST_SERVER',
     },
   },
 });

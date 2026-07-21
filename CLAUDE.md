@@ -55,12 +55,14 @@ no dots. Tools are namespaced with underscores (`crm_getCustomer`, `usage_getCus
 ### Tool registry (`src/tools/`)
 
 `registry.ts` aggregates per-system tool arrays (`crmTools.ts`, `usageTools.ts`, `locationTools.ts`,
-`financeTools.ts`, `workforceTools.ts`, `marketingTools.ts`, `respondTools.ts`) into one
-`toolRegistry`. `crm_*`/`usage_*` are customer-level (keyed by numeric `customerId`); `location_*`,
-`finance_*`, `workforce_*`, `marketing_*` are all aggregate/city-level and have no `customerId` —
-the system prompt explicitly warns Claude not to conflate the two directions. There is no
-`support_*` system — it was deleted during the Snowflake migration since the real data source has
-no ticket/support-desk table; don't reintroduce it without a real backing table. Each
+`financeTools.ts`, `workforceTools.ts`, `marketingTools.ts`, `analystTools.ts`, `respondTools.ts`)
+into one `toolRegistry`. `crm_*`/`usage_*` are customer-level (keyed by numeric `customerId`);
+`location_*`, `finance_*`, `workforce_*`, `marketing_*` are all aggregate/city-level and have no
+`customerId` — the system prompt explicitly warns Claude not to conflate the two directions. There
+is no `support_*` system — it was deleted during the Snowflake migration since the real data source
+has no ticket/support-desk table; don't reintroduce it without a real backing table. `analyst_*`
+(currently one tool, `analyst_askWorkforceQuestion`) is conditionally spread into the registry only
+when `env.SNOWFLAKE_MCP_ENDPOINT` is set — see the dedicated section below before touching it. Each
 `ToolDefinition` carries both a hand-written JSON `inputSchema` (sent to the Anthropic API) and a
 separate zod `zodSchema` (used to validate the model's actual input before it reaches a handler) —
 these are kept in sync by hand, there's no schema-generation step. `dispatchToolUseBlocks()` runs
@@ -138,6 +140,34 @@ not a fixture. Because this is live data, not a frozen fixture, exact values (da
 visit, churn probability, etc.) can drift over time — don't hardcode assumptions about her specific
 numbers into tests; the unit tests in `tests/unit/data/` use synthetic rows precisely to avoid that
 coupling.
+
+### Optional Cortex Analyst fallback (`src/snowflake/mcpAnalystClient.ts`)
+
+Separate from the direct `snowflake-sdk` connection above, there's an optional second path to
+Snowflake: a Snowflake-hosted native **MCP server** object (`AIRE_LOCAL_DB.WORKFORCE_ANALYTICS.
+MY_MCP_SERVER_C`) exposing two tools. Only one of them is ever called from this codebase —
+`aire_analyst` (Cortex Analyst, `readOnlyHint: true`). The other, `query_data`, runs arbitrary raw
+SQL and is self-flagged `destructiveHint: true`; it is intentionally never wired up here.
+
+**Cortex Analyst proposes SQL, it does not execute it.** A `tools/call` to `aire_analyst` returns
+`{ interpretation, statement }` (or just an interpretation if it needs clarification) — no rows.
+`mcpAnalystClient.ts`'s `askWorkforceAnalyst()` closes that gap itself: it calls `aire_analyst` over
+plain authenticated HTTP (JSON-RPC 2.0, no MCP SDK dependency — a single stateless request/response
+doesn't need one), checks the returned statement is `SELECT`/`WITH`-shaped via `isSelectLike()` as a
+defense-in-depth safety check, and then executes it through the **same** `querySnowflake()` used by
+every other tool. `query_data` is never touched by this flow.
+
+Auth for the MCP server's REST API is a hand-built Snowflake key-pair JWT
+(`src/snowflake/keyPairJwt.ts`, `iss: "{ACCOUNT}.{USER}.SHA256:{pubkey-fingerprint}"`, RS256), a
+different mechanism than `snowflake-sdk`'s own internal auth handling, but built from the same
+private key file (`SNOWFLAKE_PRIVATE_KEY_PATH`) — don't create a second key pair for this.
+
+This tool is **optional and additive**: it only registers when `env.SNOWFLAKE_MCP_ENDPOINT` is set
+(see `src/config/env.ts`'s `.superRefine()`, which requires `SNOWFLAKE_JWT` auth if the endpoint is
+configured), and the system prompt (`ANALYST_TOOL_SECTION` in `src/claude/systemPrompt.ts`)
+instructs Claude to try the six fixed tool systems first, using this only when a question genuinely
+falls outside their coverage — don't let it become the default path for questions the fixed tools
+already answer.
 
 ### Conversation state (`src/conversation/store.ts`)
 

@@ -19,6 +19,10 @@ const envSchema = z
     SNOWFLAKE_DATABASE: z.string().default('AIRE_DATA'),
     SNOWFLAKE_SCHEMA: z.string().default('WORKFORCE_ANALYTICS'),
     SNOWFLAKE_ROLE: z.string().optional(),
+
+    // Optional: enables the analyst_askWorkforceQuestion tool, which calls a Snowflake-hosted MCP
+    // server's Cortex Analyst tool. Omit entirely to leave that tool disabled.
+    SNOWFLAKE_MCP_ENDPOINT: z.string().url().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.SNOWFLAKE_AUTHENTICATOR === 'SNOWFLAKE_JWT' && !data.SNOWFLAKE_PRIVATE_KEY_PATH) {
@@ -33,6 +37,13 @@ const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['SNOWFLAKE_PASSWORD'],
         message: 'SNOWFLAKE_PASSWORD is required when SNOWFLAKE_AUTHENTICATOR is SNOWFLAKE',
+      });
+    }
+    if (data.SNOWFLAKE_MCP_ENDPOINT && data.SNOWFLAKE_AUTHENTICATOR !== 'SNOWFLAKE_JWT') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SNOWFLAKE_MCP_ENDPOINT'],
+        message: 'SNOWFLAKE_MCP_ENDPOINT requires SNOWFLAKE_AUTHENTICATOR=SNOWFLAKE_JWT (it signs its own key-pair JWT for the MCP request).',
       });
     }
   });
