@@ -169,6 +169,19 @@ instructs Claude to try the six fixed tool systems first, using this only when a
 falls outside their coverage — don't let it become the default path for questions the fixed tools
 already answer.
 
+**Cortex Analyst can silently pick a pre-aggregated view instead of the raw table, producing a
+materially wrong "average."** Live-verified: asking "what's the average NPS score by city?" twice
+with slightly different phrasing produced two different, both-deterministic SQL statements — one
+querying `SALESFORCE_CUSTOMERS` directly (true customer-weighted average, e.g. Miami 5.75, matching
+a ground-truth manual join), the other querying `AIRE_LOCAL_DB.WORKFORCE_ANALYTICS.
+V_CUSTOMER_TIER_SUMMARY` with `AVG(avg_nps) GROUP BY city` (Miami 7.025) — an unweighted
+average-of-per-tier-averages that overweights small high-NPS tiers relative to large low-NPS ones.
+Neither call errored or returned a warning; the wrong number came back looking exactly as
+confident as the right one. There's no code-level guard against this today — if you see a semantic-
+view aggregate result that looks off, re-run the same question phrased more literally against the
+raw table names before trusting it, and don't assume repeatability of wording preserves the query
+plan.
+
 ### Conversation state (`src/conversation/store.ts`)
 
 In-memory only, keyed by `threadKey(channel, threadTs)`. Two behaviors worth knowing before
