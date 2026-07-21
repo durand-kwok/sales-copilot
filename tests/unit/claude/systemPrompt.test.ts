@@ -27,4 +27,10 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('crm_findCustomerByName');
     expect(prompt.toLowerCase()).toContain('clarifying question');
   });
+
+  it('instructs Claude not to hallucinate figures beyond what tools returned', () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt.toLowerCase()).toContain('do not hallucinate');
+    expect(prompt.toLowerCase()).toContain('never invent');
+  });
 });
