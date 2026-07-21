@@ -42,6 +42,22 @@ describe('buildResponseBlocks', () => {
     expect(sectionBlock.text.text.length).toBeLessThanOrEqual(2900);
     expect(sectionBlock.text.text.endsWith('…')).toBe(true);
   });
+
+  it('normalizes a literal "\\n" text sequence from a malformed model output into a real line break', () => {
+    // Regression test: observed in production where a tool call's summary contained the literal
+    // two characters "\" + "n" as data instead of an actual newline, rendering as visible "\n" text.
+    const blocks = buildResponseBlocks({
+      summary: 'First paragraph.\\n\\nSecond paragraph.',
+      recommendedNextActions: ['Do the thing.\\nFollow up too.'],
+    });
+    const sectionBlock = blocks[0] as { text: { text: string } };
+    expect(sectionBlock.text.text).toBe('First paragraph.\n\nSecond paragraph.');
+    expect(sectionBlock.text.text).not.toContain('\\n');
+
+    const actionsBlock = blocks[2] as { text: { text: string } };
+    expect(actionsBlock.text.text).toContain('Do the thing.\nFollow up too.');
+    expect(actionsBlock.text.text).not.toContain('\\n');
+  });
 });
 
 describe('buildResponseFallbackText', () => {
@@ -57,5 +73,11 @@ describe('buildResponseFallbackText', () => {
     expect(text).toBe(
       'Acme Corp status.\n\nRecommended Next Actions\n- Review declining adoption\n- Address SSO outage',
     );
+  });
+
+  it('normalizes a literal "\\n" text sequence from a malformed model output into a real line break', () => {
+    const text = buildResponseFallbackText({ summary: 'First paragraph.\\n\\nSecond paragraph.' });
+    expect(text).toBe('First paragraph.\n\nSecond paragraph.');
+    expect(text).not.toContain('\\n');
   });
 });

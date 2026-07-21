@@ -2,9 +2,12 @@ import type Anthropic from '@anthropic-ai/sdk';
 import type { z } from 'zod';
 import { logger } from '../logging/logger.js';
 import { crmTools } from './crmTools.js';
+import { financeTools } from './financeTools.js';
+import { locationTools } from './locationTools.js';
+import { marketingTools } from './marketingTools.js';
 import { respondTools } from './respondTools.js';
-import { supportTools } from './supportTools.js';
 import { usageTools } from './usageTools.js';
+import { workforceTools } from './workforceTools.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry entries are intentionally heterogeneous
 export interface ToolDefinition<TInput = any> {
@@ -15,7 +18,15 @@ export interface ToolDefinition<TInput = any> {
   handler: (input: TInput) => Promise<unknown>;
 }
 
-export const toolRegistry: ToolDefinition[] = [...crmTools, ...supportTools, ...usageTools, ...respondTools];
+export const toolRegistry: ToolDefinition[] = [
+  ...crmTools,
+  ...usageTools,
+  ...locationTools,
+  ...financeTools,
+  ...workforceTools,
+  ...marketingTools,
+  ...respondTools,
+];
 
 const toolsByName = new Map(toolRegistry.map((tool) => [tool.name, tool]));
 

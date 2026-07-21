@@ -10,6 +10,11 @@ export default defineConfig({
       ANTHROPIC_API_KEY: 'sk-ant-test-key',
       CLAUDE_MODEL: 'claude-test-model',
       LOG_LEVEL: 'silent',
+      SNOWFLAKE_ACCOUNT: 'test-account',
+      SNOWFLAKE_USERNAME: 'test-user',
+      SNOWFLAKE_AUTHENTICATOR: 'SNOWFLAKE_JWT',
+      SNOWFLAKE_PRIVATE_KEY_PATH: '/dev/null',
+      SNOWFLAKE_WAREHOUSE: 'TEST_WH',
     },
   },
 });

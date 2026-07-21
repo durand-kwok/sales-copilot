@@ -1,13 +1,41 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
-const envSchema = z.object({
-  SLACK_BOT_TOKEN: z.string().startsWith('xoxb-', 'SLACK_BOT_TOKEN must be a bot token (xoxb-...)'),
-  SLACK_APP_TOKEN: z.string().startsWith('xapp-', 'SLACK_APP_TOKEN must be an app-level token (xapp-...)'),
-  ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
-  CLAUDE_MODEL: z.string().default('claude-sonnet-5'),
-  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-});
+const envSchema = z
+  .object({
+    SLACK_BOT_TOKEN: z.string().startsWith('xoxb-', 'SLACK_BOT_TOKEN must be a bot token (xoxb-...)'),
+    SLACK_APP_TOKEN: z.string().startsWith('xapp-', 'SLACK_APP_TOKEN must be an app-level token (xapp-...)'),
+    ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
+    CLAUDE_MODEL: z.string().default('claude-sonnet-5'),
+    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+
+    SNOWFLAKE_ACCOUNT: z.string().min(1, 'SNOWFLAKE_ACCOUNT is required'),
+    SNOWFLAKE_USERNAME: z.string().min(1, 'SNOWFLAKE_USERNAME is required'),
+    SNOWFLAKE_AUTHENTICATOR: z.enum(['SNOWFLAKE_JWT', 'SNOWFLAKE']).default('SNOWFLAKE_JWT'),
+    SNOWFLAKE_PRIVATE_KEY_PATH: z.string().optional(),
+    SNOWFLAKE_PRIVATE_KEY_PASSPHRASE: z.string().optional(),
+    SNOWFLAKE_PASSWORD: z.string().optional(),
+    SNOWFLAKE_WAREHOUSE: z.string().min(1, 'SNOWFLAKE_WAREHOUSE is required'),
+    SNOWFLAKE_DATABASE: z.string().default('AIRE_DATA'),
+    SNOWFLAKE_SCHEMA: z.string().default('WORKFORCE_ANALYTICS'),
+    SNOWFLAKE_ROLE: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.SNOWFLAKE_AUTHENTICATOR === 'SNOWFLAKE_JWT' && !data.SNOWFLAKE_PRIVATE_KEY_PATH) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SNOWFLAKE_PRIVATE_KEY_PATH'],
+        message: 'SNOWFLAKE_PRIVATE_KEY_PATH is required when SNOWFLAKE_AUTHENTICATOR is SNOWFLAKE_JWT',
+      });
+    }
+    if (data.SNOWFLAKE_AUTHENTICATOR === 'SNOWFLAKE' && !data.SNOWFLAKE_PASSWORD) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['SNOWFLAKE_PASSWORD'],
+        message: 'SNOWFLAKE_PASSWORD is required when SNOWFLAKE_AUTHENTICATOR is SNOWFLAKE',
+      });
+    }
+  });
 
 export type Env = z.infer<typeof envSchema>;
 

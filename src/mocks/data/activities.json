@@ -1,9 +1,0 @@
-[
-  { "id": "act_acme_1", "accountId": "acc_acme", "type": "call", "summary": "Quarterly business review — Dana flagged concerns about adoption of the reporting dashboard.", "date": "2026-07-02", "actor": "Jordan Lee" },
-  { "id": "act_acme_2", "accountId": "acc_acme", "type": "email", "summary": "Marcus escalated repeated SSO login failures affecting the operations team.", "date": "2026-07-10", "actor": "Marcus Webb" },
-  { "id": "act_acme_3", "accountId": "acc_acme", "type": "meeting", "summary": "Renewal negotiation kickoff; discussed AI Analytics add-on as expansion path.", "date": "2026-07-14", "actor": "Jordan Lee" },
-  { "id": "act_globex_1", "accountId": "acc_globex", "type": "call", "summary": "Elena requested a proposal for additional Growth tier seats.", "date": "2026-07-08", "actor": "Priya Patel" },
-  { "id": "act_initech_1", "accountId": "acc_initech", "type": "email", "summary": "Sam went quiet after pricing discussion; no response in 3 weeks.", "date": "2026-06-25", "actor": "Jordan Lee" },
-  { "id": "act_umbrella_1", "accountId": "acc_umbrella", "type": "meeting", "summary": "Onboarding kickoff call completed successfully.", "date": "2026-05-05", "actor": "Priya Patel" },
-  { "id": "act_stark_1", "accountId": "acc_stark", "type": "note", "summary": "Primary champion (former VP Eng) left the company; Tony Reyes is the new contact but not yet engaged.", "date": "2026-07-05", "actor": "Morgan Reyes" }
-]

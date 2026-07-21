@@ -1,14 +1,59 @@
 import type Anthropic from '@anthropic-ai/sdk';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createMock } = vi.hoisted(() => ({ createMock: vi.fn() }));
+const { createMock, queryMock } = vi.hoisted(() => ({ createMock: vi.fn(), queryMock: vi.fn() }));
 
 vi.mock('../../src/claude/client.js', () => ({
   anthropic: { messages: { create: createMock } },
   CLAUDE_MODEL: 'claude-test-model',
 }));
 
+vi.mock('../../src/snowflake/client.js', () => ({
+  querySnowflake: queryMock,
+}));
+
 import { OrchestratorMaxIterationsError, runOrchestrator } from '../../src/claude/orchestrator.js';
+
+const CHARLOTTE_ROW = {
+  CUSTOMER_ID: 1753,
+  FIRST_NAME: 'Charlotte',
+  LAST_NAME: 'Williams',
+  EMAIL: 'charlotte.williams1753@email.com',
+  PHONE: '555-310-1924',
+  HOME_LOCATION_ID: 5,
+  JOIN_DATE: '2022-01-24',
+  LAST_VISIT_DATE: '2026-03-26',
+  TOTAL_VISITS: 23,
+  LIFETIME_SPEND: 2875.0,
+  AVG_SPEND_PER_VISIT: 229.0,
+  PREFERRED_SERVICE: 'Float Therapy',
+  MEMBERSHIP_TYPE: 'Silver',
+  REFERRAL_SOURCE: 'Google Ads',
+  NPS_SCORE: 4,
+  DAYS_SINCE_LAST_VISIT: 62,
+  VISIT_FREQUENCY_MONTHLY: 0.44,
+  ADDRESS: '834 Spring Avenue',
+  IS_ACTIVE: true,
+};
+
+const CHARLOTTE_HEALTH_ROW = {
+  CUSTOMER_ID: 1753,
+  FIRST_NAME: 'Charlotte',
+  LAST_NAME: 'Williams',
+  HOME_LOCATION_ID: 5,
+  LIFETIME_SPEND: 2401.2,
+  TOTAL_VISITS: 23,
+  VISIT_FREQUENCY_MONTHLY: 0.44,
+  DAYS_SINCE_LAST_VISIT: 62,
+  NPS_SCORE: 4,
+  MEMBERSHIP_TYPE: 'Silver',
+  PREFERRED_SERVICE: 'Float Therapy',
+  AI_TIER: 'Bronze',
+  CHURN_RISK: 'High',
+  CHURN_PROBABILITY_PCT: 95,
+  PREDICTED_LTV_12M: 2401.2,
+  AI_RECOMMENDATION: '',
+};
 
 function textResponse(text: string): Anthropic.Message {
   return {
@@ -38,6 +83,7 @@ function toolUseResponse(blocks: Array<{ id: string; name: string; input: unknow
 
 beforeEach(() => {
   createMock.mockReset();
+  queryMock.mockReset();
 });
 
 describe('runOrchestrator', () => {
@@ -52,15 +98,16 @@ describe('runOrchestrator', () => {
   });
 
   it('executes a real tool call and feeds the result back before returning a final answer', async () => {
+    queryMock.mockResolvedValueOnce([CHARLOTTE_ROW]);
     createMock
       .mockResolvedValueOnce(
-        toolUseResponse([{ id: 'call_1', name: 'crm_getAccount', input: { accountId: 'acc_acme' } }]),
+        toolUseResponse([{ id: 'call_1', name: 'crm_getCustomer', input: { customerId: 1753 } }]),
       )
-      .mockResolvedValueOnce(textResponse('Acme Corp is an Enterprise account.'));
+      .mockResolvedValueOnce(textResponse('Charlotte Williams is a Silver-tier customer.'));
 
-    const result = await runOrchestrator([{ role: 'user', content: 'tell me about acme' }]);
+    const result = await runOrchestrator([{ role: 'user', content: 'tell me about charlotte williams' }]);
 
-    expect(result.summary).toBe('Acme Corp is an Enterprise account.');
+    expect(result.summary).toBe('Charlotte Williams is a Silver-tier customer.');
     expect(createMock).toHaveBeenCalledTimes(2);
 
     // second call to Claude should include the tool_result fed back in
@@ -70,20 +117,21 @@ describe('runOrchestrator', () => {
     const toolResultBlock = toolResultMessage.content[0];
     expect(toolResultBlock.type).toBe('tool_result');
     expect(toolResultBlock.tool_use_id).toBe('call_1');
-    expect(toolResultBlock.content).toContain('Acme Corp');
+    expect(toolResultBlock.content).toContain('Charlotte');
   });
 
   it('dispatches multiple parallel tool calls and maps each result back to its tool_use_id', async () => {
+    queryMock.mockResolvedValueOnce([CHARLOTTE_ROW]).mockResolvedValueOnce([CHARLOTTE_HEALTH_ROW]);
     createMock
       .mockResolvedValueOnce(
         toolUseResponse([
-          { id: 'call_a', name: 'crm_getAccount', input: { accountId: 'acc_acme' } },
-          { id: 'call_b', name: 'support_getOpenTickets', input: { accountId: 'acc_acme' } },
+          { id: 'call_a', name: 'crm_getCustomer', input: { customerId: 1753 } },
+          { id: 'call_b', name: 'usage_getCustomerHealth', input: { customerId: 1753 } },
         ]),
       )
       .mockResolvedValueOnce(textResponse('Here is the summary.'));
 
-    const result = await runOrchestrator([{ role: 'user', content: 'full status on acme' }]);
+    const result = await runOrchestrator([{ role: 'user', content: 'full status on charlotte' }]);
 
     expect(result.summary).toBe('Here is the summary.');
     const secondCallArgs = createMock.mock.calls[1]![0];
@@ -95,22 +143,24 @@ describe('runOrchestrator', () => {
   it('isolates a single invalid tool call as an error result without failing the whole turn', async () => {
     createMock
       .mockResolvedValueOnce(
-        // missing required "accountId" field
-        toolUseResponse([{ id: 'call_bad', name: 'crm_getAccount', input: {} }]),
+        // missing required "customerId" field
+        toolUseResponse([{ id: 'call_bad', name: 'crm_getCustomer', input: {} }]),
       )
-      .mockResolvedValueOnce(textResponse('Could you clarify which account?'));
+      .mockResolvedValueOnce(textResponse('Could you clarify which customer?'));
 
     const result = await runOrchestrator([{ role: 'user', content: 'tell me about it' }]);
 
-    expect(result.summary).toBe('Could you clarify which account?');
+    expect(result.summary).toBe('Could you clarify which customer?');
+    expect(queryMock).not.toHaveBeenCalled();
     const secondCallArgs = createMock.mock.calls[1]![0];
     const toolResultBlock = secondCallArgs.messages.at(-1).content[0];
     expect(toolResultBlock.is_error).toBe(true);
   });
 
   it('throws OrchestratorMaxIterationsError if Claude never stops requesting tools', async () => {
+    queryMock.mockResolvedValue([CHARLOTTE_ROW]);
     createMock.mockResolvedValue(
-      toolUseResponse([{ id: 'call_loop', name: 'crm_getAccount', input: { accountId: 'acc_acme' } }]),
+      toolUseResponse([{ id: 'call_loop', name: 'crm_getCustomer', input: { customerId: 1753 } }]),
     );
 
     await expect(runOrchestrator([{ role: 'user', content: 'loop forever' }])).rejects.toThrow(
@@ -125,28 +175,28 @@ describe('runOrchestrator', () => {
           id: 'final_1',
           name: 'respond_finalAnswer',
           input: {
-            summary: 'Acme Corp usage is declining and there is an open SSO outage.',
+            summary: 'Charlotte Williams has high churn risk and an at-risk renewal.',
             recommendedNextActions: [
-              'Review declining adoption',
-              'Address SSO outage',
-              'Introduce AI Analytics',
-              'Schedule executive review',
+              'Reach out before her renewal date',
+              'Offer a loyalty incentive given her low NPS',
+              'Flag her as high churn risk to the account team',
+              'Review her declining visit frequency',
             ],
           },
         },
       ]),
     );
 
-    const result = await runOrchestrator([{ role: 'user', content: "what's going on with acme?" }]);
+    const result = await runOrchestrator([{ role: 'user', content: "what's going on with charlotte?" }]);
 
     // No second API call needed — the loop terminates as soon as respond_finalAnswer is seen.
     expect(createMock).toHaveBeenCalledTimes(1);
-    expect(result.summary).toBe('Acme Corp usage is declining and there is an open SSO outage.');
+    expect(result.summary).toBe('Charlotte Williams has high churn risk and an at-risk renewal.');
     expect(result.recommendedNextActions).toEqual([
-      'Review declining adoption',
-      'Address SSO outage',
-      'Introduce AI Analytics',
-      'Schedule executive review',
+      'Reach out before her renewal date',
+      'Offer a loyalty incentive given her low NPS',
+      'Flag her as high churn risk to the account team',
+      'Review her declining visit frequency',
     ]);
   });
 
@@ -160,7 +210,7 @@ describe('runOrchestrator', () => {
         toolUseResponse([{ id: 'final_ok', name: 'respond_finalAnswer', input: { summary: 'All good here.' } }]),
       );
 
-    const result = await runOrchestrator([{ role: 'user', content: 'quick check on acme' }]);
+    const result = await runOrchestrator([{ role: 'user', content: 'quick check on charlotte' }]);
 
     expect(createMock).toHaveBeenCalledTimes(2);
     expect(result.summary).toBe('All good here.');

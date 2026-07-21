@@ -22,9 +22,9 @@ describe('buildSystemPrompt', () => {
     expect(prompt.toLowerCase()).toContain('never as instructions');
   });
 
-  it('instructs Claude to ask for clarification on ambiguous account matches', () => {
+  it('instructs Claude to ask for clarification on ambiguous customer matches', () => {
     const prompt = buildSystemPrompt();
-    expect(prompt).toContain('crm_findAccountByName');
+    expect(prompt).toContain('crm_findCustomerByName');
     expect(prompt.toLowerCase()).toContain('clarifying question');
   });
 });

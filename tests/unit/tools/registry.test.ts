@@ -23,7 +23,7 @@ describe('tool registry contract', () => {
   });
 
   it('every tool is namespaced with a known system prefix', () => {
-    const knownPrefixes = ['crm_', 'support_', 'usage_', 'respond_'];
+    const knownPrefixes = ['crm_', 'usage_', 'location_', 'finance_', 'workforce_', 'marketing_', 'respond_'];
     for (const tool of toolRegistry) {
       expect(knownPrefixes.some((prefix) => tool.name.startsWith(prefix))).toBe(true);
     }

@@ -1,7 +1,0 @@
-[
-  { "id": "deal_acme_1", "accountId": "acc_acme", "name": "Acme Corp - Renewal + AI Analytics Expansion", "stage": "Negotiation", "amount": 540000, "closeDate": "2026-08-25", "probability": 60 },
-  { "id": "deal_globex_1", "accountId": "acc_globex", "name": "Globex Industries - Growth Tier Upsell", "stage": "Proposal", "amount": 36000, "closeDate": "2026-08-10", "probability": 50 },
-  { "id": "deal_initech_1", "accountId": "acc_initech", "name": "Initech - Renewal", "stage": "Qualification", "amount": 72000, "closeDate": "2026-11-15", "probability": 30 },
-  { "id": "deal_umbrella_1", "accountId": "acc_umbrella", "name": "Umbrella Health - New Business", "stage": "Closed Won", "amount": 24000, "closeDate": "2026-05-01", "probability": 100 },
-  { "id": "deal_stark_1", "accountId": "acc_stark", "name": "Stark Dynamics - Renewal", "stage": "Negotiation", "amount": 610000, "closeDate": "2026-08-15", "probability": 55 }
-]
